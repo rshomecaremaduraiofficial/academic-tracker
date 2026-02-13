@@ -1,0 +1,960 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Academic Performance Tracker</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <!-- PDF libraries (CDN) -->
+  <script defer src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+  <script defer src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+
+  <style>
+    :root{
+      --bg1:#f6f8ff;
+      --bg2:#eef2ff;
+      --card:rgba(255,255,255,.78);
+      --text:#121827;
+      --muted:#5b647a;
+      --line:rgba(20,27,40,.12);
+      --focus:rgba(59,130,246,.45);
+      --shadow: 0 16px 50px rgba(16,24,40,.12);
+      --shadow2: 0 8px 24px rgba(16,24,40,.10);
+      --r: 18px;
+
+      --max: 1120px;
+      --pad: 18px;
+    }
+
+    *{box-sizing:border-box}
+    html,body{height:100%}
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color:var(--text);
+      background:
+        radial-gradient(900px 500px at 20% 15%, rgba(59,130,246,.18), transparent 60%),
+        radial-gradient(900px 500px at 85% 25%, rgba(18,183,106,.16), transparent 60%),
+        radial-gradient(900px 500px at 50% 90%, rgba(247,144,9,.12), transparent 60%),
+        linear-gradient(180deg, var(--bg1), var(--bg2));
+      overflow-x:hidden;
+    }
+
+    /* Background image layer */
+    body::before{
+      content: "";
+      position: fixed;
+      inset: 0;
+      background: url("background.avif") center/cover no-repeat;
+      opacity: 0.15;
+      z-index: -3;
+    }
+
+    /* subtle animated background “glass” layer */
+    .bg-glow{
+      position:fixed; inset:-30%;
+      background: conic-gradient(from 180deg,
+        rgba(59,130,246,.18),
+        rgba(18,183,106,.14),
+        rgba(247,144,9,.12),
+        rgba(59,130,246,.18));
+      filter: blur(80px);
+      opacity:.45;
+      animation: drift 16s ease-in-out infinite;
+      pointer-events:none;
+      z-index:-2;
+    }
+    @keyframes drift{
+      0%{transform: translate3d(-2%, -1%, 0) rotate(0deg) scale(1.05)}
+      50%{transform: translate3d(2%, 1.5%, 0) rotate(28deg) scale(1.1)}
+      100%{transform: translate3d(-2%, -1%, 0) rotate(0deg) scale(1.05)}
+    }
+
+    /* ✅ Better alignment: centered layout on desktop, normal on mobile */
+    .wrap{
+      max-width: var(--max);
+      margin: 0 auto;
+      padding: 28px var(--pad) 60px;
+      display:grid;
+      gap: 16px;
+      min-height: 100vh;
+      align-content: start;
+      animation: pageIn .75s cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes pageIn{
+      from{ opacity:0; transform: translateY(18px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    @media (min-width: 980px){
+      .wrap{
+        align-content: center; /* ✅ vertically centers everything on desktop */
+        padding-top: 36px;
+        padding-bottom: 36px;
+      }
+    }
+
+    .topbar{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding: 14px 16px;
+      border-radius: var(--r);
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow2);
+      backdrop-filter: blur(10px);
+      animation: floatUp .85s cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes floatUp{
+      from{ opacity:0; transform: translateY(14px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    /* ✅ Brand with real logo image */
+    .brand{ display:flex; align-items:center; gap:12px; min-width: 0; }
+    .brand img{
+      width:40px; height:40px;
+      object-fit:contain;
+      border-radius: 12px;
+      box-shadow: 0 10px 24px rgba(59,130,246,.16);
+      flex: 0 0 auto;
+      animation: logoPop .85s cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes logoPop{
+      from{ opacity:0; transform: translateY(10px) scale(.92); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+    .brandText{ min-width: 0; }
+    .brand h1{ margin:0; font-size: 16px; line-height:1.1; }
+    .brand .sub{
+      font-size:12px; color:var(--muted); margin-top:3px;
+      white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    }
+
+    .stepper{
+      display:flex; align-items:center; gap:10px;
+      color:var(--muted);
+      font-size:12px;
+      white-space:nowrap;
+      flex: 0 0 auto;
+    }
+    .dot{
+      width:10px; height:10px; border-radius: 999px;
+      background: rgba(16,24,40,.12);
+      border: 1px solid rgba(16,24,40,.10);
+      transform: scale(.9);
+      transition: transform .25s ease, background .25s ease, box-shadow .25s ease;
+    }
+    .dot.active{
+      background: rgba(59,130,246,.95);
+      box-shadow: 0 0 0 6px rgba(59,130,246,.16);
+      transform: scale(1);
+    }
+    .stepper .label strong{color:var(--text)}
+
+    .btn{
+      border:1px solid var(--line);
+      background: rgba(255,255,255,.75);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 12px;
+      cursor:pointer;
+      transition: transform .18s ease, background .18s ease, border-color .18s ease, box-shadow .18s ease, filter .18s ease;
+      user-select:none;
+      display:inline-flex; align-items:center; gap:10px;
+    }
+    .btn:hover{
+      transform: translateY(-1px);
+      background: rgba(255,255,255,.92);
+      border-color: rgba(16,24,40,.18);
+      box-shadow: 0 10px 24px rgba(16,24,40,.10);
+    }
+    .btn:active{ transform: translateY(0) scale(.99); }
+    .btn.primary{
+      border-color: rgba(59,130,246,.35);
+      background: linear-gradient(180deg, rgba(59,130,246,.16), rgba(59,130,246,.10));
+    }
+    .btn:disabled{
+      cursor:not-allowed;
+      opacity:.7;
+      transform:none;
+      box-shadow:none;
+    }
+
+    /* ✅ Main grid: better spacing + consistent on all screens */
+    .grid{
+      display:grid; gap:16px;
+      grid-template-columns: 1fr;
+      animation: floatUp .9s cubic-bezier(.2,.9,.2,1) both;
+      animation-delay: .05s;
+    }
+    @media (min-width: 950px){
+      .grid{ grid-template-columns: 1.15fr .85fr; }
+    }
+
+    .card{
+      border-radius: var(--r);
+      background: var(--card);
+      border: 1px solid var(--line);
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(10px);
+      overflow:hidden;
+      animation: cardIn .85s cubic-bezier(.2,.9,.2,1) both;
+      animation-delay: .06s;
+    }
+    @keyframes cardIn{
+      from{ opacity:0; transform: translateY(18px) scale(.985); filter: blur(4px); }
+      to{ opacity:1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    .card-h{
+      padding: 16px 16px 10px;
+      border-bottom: 1px solid var(--line);
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+    }
+    .card-h h2{ margin:0; font-size:14px; letter-spacing:.2px;}
+    .hint{font-size:12px; color:var(--muted);}
+    .card-b{ padding: 16px; }
+
+    /* Smooth screen transitions */
+    .screen{ display:none; animation: screenIn .35s cubic-bezier(.2,.9,.2,1) both; transform-origin: 50% 30%; }
+    .screen.active{ display:block; }
+    @keyframes screenIn{
+      from{ opacity:0; transform: translateY(14px) scale(.985); filter: blur(5px); }
+      to{ opacity:1; transform: translateY(0) scale(1); filter: blur(0); }
+    }
+    .screen.out{ animation: screenOut .22s ease both; }
+    @keyframes screenOut{
+      from{ opacity:1; transform: translateY(0) scale(1); }
+      to{ opacity:0; transform: translateY(10px) scale(.99); }
+    }
+
+    /* Inputs */
+    form{ display:grid; gap:14px; }
+    .row{ display:grid; gap:12px; grid-template-columns: 1fr; }
+    @media (min-width: 720px){ .row{ grid-template-columns: 1fr 1fr; } }
+    .field{ display:grid; gap:6px; }
+    .label{
+      display:flex; align-items:center; justify-content:space-between; gap:10px;
+      font-size:12px; color: var(--muted);
+    }
+    .label strong{ color: var(--text); font-weight: 700; }
+    .control{ position:relative; }
+
+    input, select, textarea{
+      width:100%;
+      background: rgba(255,255,255,.88);
+      border: 1px solid rgba(16,24,40,.14);
+      color: var(--text);
+      border-radius: 14px;
+      padding: 11px 12px;
+      outline:none;
+      transition: border-color .18s ease, box-shadow .18s ease, transform .12s ease;
+      font-size: 14px;
+    }
+    textarea{ min-height: 84px; resize: vertical; }
+    input::placeholder, textarea::placeholder{ color: rgba(91,100,122,.7); }
+    input:focus, select:focus, textarea:focus{
+      border-color: rgba(59,130,246,.45);
+      box-shadow: 0 0 0 6px var(--focus);
+      transform: translateY(-1px);
+    }
+    input:invalid[data-touched="1"]{
+      border-color: rgba(240,68,56,.55);
+      box-shadow: 0 0 0 6px rgba(240,68,56,.14);
+    }
+    .suffix{
+      position:absolute; right:10px; top:50%;
+      transform: translateY(-50%);
+      color: rgba(91,100,122,.85);
+      font-size: 12px;
+      pointer-events:none;
+    }
+
+    /* Slider */
+    .rangeWrap{
+      display:grid; gap:10px;
+      background: rgba(255,255,255,.75);
+      border: 1px solid rgba(16,24,40,.10);
+      padding: 12px;
+      border-radius: 14px;
+    }
+    input[type="range"]{
+      padding:0; height: 22px;
+      background: transparent;
+      border: none;
+      box-shadow:none;
+    }
+    input[type="range"]::-webkit-slider-runnable-track{
+      height: 6px; border-radius: 999px;
+      background: rgba(16,24,40,.14);
+    }
+    input[type="range"]::-webkit-slider-thumb{
+      -webkit-appearance:none;
+      width: 18px; height: 18px; border-radius: 999px;
+      background: rgba(59,130,246,.95);
+      border: 1px solid rgba(255,255,255,.7);
+      margin-top: -6px;
+      box-shadow: 0 8px 16px rgba(16,24,40,.20);
+      transition: transform .16s ease;
+    }
+    input[type="range"]:active::-webkit-slider-thumb{ transform: scale(1.08); }
+    .mini{ font-size: 12px; color: var(--muted); display:flex; justify-content:space-between; gap:10px; }
+
+    /* Deadline list */
+    .dlList{ display:grid; gap:10px; }
+    .dlItem{
+      display:grid;
+      grid-template-columns: 1.2fr .9fr auto;
+      gap:10px;
+      align-items:center;
+      background: rgba(255,255,255,.75);
+      border: 1px solid rgba(16,24,40,.10);
+      padding: 10px;
+      border-radius: 14px;
+      animation: popIn .25s ease both;
+    }
+    @keyframes popIn{ from{opacity:0; transform: translateY(8px) scale(.99)} to{opacity:1; transform: translateY(0) scale(1)} }
+    .dlItem small{ color: var(--muted); display:block; margin-top:2px; }
+    .iconBtn{
+      width:40px; height:40px;
+      border-radius: 12px;
+      border: 1px solid rgba(16,24,40,.12);
+      background: rgba(255,255,255,.88);
+      color: var(--text);
+      cursor:pointer;
+      transition: transform .18s ease, background .18s ease;
+    }
+    .iconBtn:hover{ transform: translateY(-1px); background: rgba(255,255,255,1); }
+    .iconBtn:active{ transform: translateY(0) scale(.99); }
+
+    /* Results UI */
+    .statusBox{
+      display:flex; align-items:center; justify-content:space-between; gap:12px;
+      padding: 14px;
+      border-radius: 16px;
+      border: 1px solid rgba(16,24,40,.10);
+      background: rgba(255,255,255,.75);
+      flex-wrap: wrap;
+    }
+    .statusTitle{ font-size: 12px; color: var(--muted); }
+    .statusText{ font-size: 18px; font-weight: 900; margin-top: 2px; }
+    .reason{ margin-top: 4px; font-size: 12px; color: var(--muted); max-width: 520px; }
+
+    .pill{
+      padding: 8px 10px;
+      border-radius: 999px;
+      font-weight: 900;
+      font-size: 12px;
+      border:1px solid rgba(16,24,40,.12);
+      background: rgba(255,255,255,.88);
+      min-width: 132px;
+      text-align:center;
+    }
+    .pill.bump{ animation: bump .28s ease; }
+    @keyframes bump{ 0%{transform:scale(.98)} 60%{transform:scale(1.04)} 100%{transform:scale(1)} }
+    .pill.track{ border-color: rgba(18,183,106,.35); background: rgba(18,183,106,.10); color:#0b6b2e; }
+    .pill.attn{ border-color: rgba(247,144,9,.40); background: rgba(247,144,9,.10); color:#7a3e00; }
+    .pill.risk{ border-color: rgba(240,68,56,.40); background: rgba(240,68,56,.10); color:#7a0b16; }
+
+    .list{ margin: 12px 0 0; padding-left: 18px; }
+    .list li{ margin: 8px 0; }
+    .empty{
+      margin-top: 10px;
+      color: var(--muted);
+      font-size: 13px;
+      padding: 10px;
+      border-radius: 12px;
+      border: 1px dashed rgba(16,24,40,.18);
+      background: rgba(255,255,255,.65);
+    }
+
+    /* Toast */
+    .toast{
+      position: fixed;
+      left: 50%;
+      bottom: 18px;
+      transform: translateX(-50%);
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(16,24,40,.14);
+      color: var(--text);
+      padding: 10px 12px;
+      border-radius: 14px;
+      box-shadow: var(--shadow2);
+      opacity:0;
+      pointer-events:none;
+      transition: opacity .25s ease, transform .25s ease;
+      z-index: 50;
+      font-size: 13px;
+    }
+    .toast.show{ opacity:1; transform: translateX(-50%) translateY(-6px); }
+
+    /* Loading spinner inside button */
+    .spinner{
+      width: 16px; height: 16px;
+      border-radius: 999px;
+      border: 2px solid rgba(16,24,40,.18);
+      border-top-color: rgba(59,130,246,.9);
+      animation: spin .8s linear infinite;
+      display:none;
+    }
+    @keyframes spin{ to { transform: rotate(360deg); } }
+    .btn.loading .spinner{ display:inline-block; }
+    .btn.loading .btnText{ opacity:.75; }
+
+    /* Printable section (for PDF capture) */
+    #pdfArea{
+      background: white;
+      color: #111;
+      border-radius: 14px;
+      padding: 14px;
+    }
+
+    /* ✅ Mobile topbar alignment */
+    @media (max-width: 720px){
+      .topbar{
+        flex-direction: column;
+        align-items: stretch;
+        gap: 12px;
+      }
+      .stepper{
+        justify-content: center;
+      }
+      .brand{
+        justify-content: flex-start;
+      }
+      .btn{
+        width: 100%;
+        justify-content: center;
+      }
+      .dlItem{
+        grid-template-columns: 1fr;
+      }
+      .iconBtn{
+        width: 100%;
+        height: 44px;
+      }
+      .statusBox{
+        align-items: flex-start;
+      }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      .bg-glow{ animation:none; }
+      .screen{ animation:none; }
+      .dlItem{ animation:none; }
+      .pill.bump{ animation:none; }
+      .btn, input, select, textarea{ transition:none; }
+      .spinner{ animation:none; }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="bg-glow"></div>
+
+  <div class="wrap">
+    <header class="topbar">
+      <div class="brand">
+        <!-- ✅ real logo -->
+        <img src="logo.png" alt="Logo">
+        <div class="brandText">
+          <h1>Academic Performance Tracker</h1>
+          <div class="sub">Enter your details correctly and track</div>
+        </div>
+      </div>
+
+      <div class="stepper" aria-label="Progress">
+        <div class="dot active" id="dot1"></div>
+        <div class="label"><strong id="stepLabel">Input</strong></div>
+        <div class="dot" id="dot2"></div>
+      </div>
+
+      <div>
+        <button class="btn" id="resetBtn" type="button">Reset</button>
+      </div>
+    </header>
+
+    <!-- INPUT SCREEN -->
+    <section class="card screen active" id="screenInput" aria-label="Input screen">
+      <div class="card-h">
+        <h2>Student Check-in</h2>
+      </div>
+      <div class="card-b">
+        <form id="checkinForm" novalidate>
+          <div class="row">
+            <div class="field">
+              <div class="label"><strong>Attendance</strong><span>0–100%</span></div>
+              <div class="control">
+                <input id="attendance" name="attendance" type="number" inputmode="numeric" min="0" max="100" required placeholder="e.g., 82" />
+                <span class="suffix">%</span>
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="label"><strong>Engagement level</strong><span id="engBadge">3 / 5</span></div>
+              <div class="rangeWrap">
+                <input id="engagement" name="engagement" type="range" min="1" max="5" step="1" value="3" />
+                <div class="mini"><span>Low</span><span>High</span></div>
+              </div>
+            </div>
+          </div>
+
+          <div class="row">
+            <div class="field">
+              <div class="label"><strong>Missed deadlines</strong><span>count</span></div>
+              <div class="control">
+                <input id="missedDeadlines" name="missedDeadlines" type="number" inputmode="numeric" min="0" max="99" required placeholder="e.g., 0" />
+              </div>
+            </div>
+
+            <div class="field">
+              <div class="label"><strong>Modules behind</strong><span>count</span></div>
+              <div class="control">
+                <input id="modulesBehind" name="modulesBehind" type="number" inputmode="numeric" min="0" max="99" required placeholder="e.g., 0" />
+              </div>
+            </div>
+          </div>
+
+          <div class="field">
+            <div class="label"><strong>Add deadlines</strong></div>
+
+            <div class="row">
+              <div class="control">
+                <input id="dlTitle" type="text" maxlength="80" placeholder="e.g., Biology report" />
+              </div>
+              <div class="control">
+                <input id="dlDate" type="date" />
+              </div>
+            </div>
+
+            <div style="display:flex; gap:10px; align-items:center; margin-top:10px; flex-wrap:wrap;">
+              <button class="btn" id="addDeadlineBtn" type="button">+ Add deadline</button>
+              <span class="hint">Add 1–5 upcoming deadlines for better reminders</span>
+            </div>
+
+            <div class="dlList" id="deadlineList" style="margin-top:12px;"></div>
+          </div>
+
+          <div class="field">
+            <div class="label"><strong>Notes (optional)</strong><span>anything affecting study</span></div>
+            <textarea id="notes" placeholder="e.g., working extra shifts, behind in lectures..."></textarea>
+          </div>
+
+          <div style="display:flex; gap:10px; justify-content:flex-end; margin-top: 6px; flex-wrap:wrap;">
+            <button class="btn primary" id="generateBtn" type="submit">
+              <span class="spinner" aria-hidden="true"></span>
+              <span class="btnText">Generate Results</span>
+            </button>
+          </div>
+        </form>
+      </div>
+    </section>
+
+    <!-- RESULTS SCREEN -->
+    <section class="card screen" id="screenResults" aria-label="Results screen">
+      <div class="card-h">
+        <h2>Results</h2>
+
+      </div>
+
+      <div class="card-b">
+        <div id="pdfArea">
+          <div class="statusBox" aria-live="polite">
+            <div>
+              <div class="statusTitle"><strong>Performance Status</strong></div>
+              <div class="statusText" id="statusText">—</div>
+              <div class="reason" id="statusReason"></div>
+            </div>
+            <div class="pill" id="statusPill">—</div>
+          </div>
+
+          <div class="grid" style="margin-top:16px;">
+            <div class="card" style="box-shadow:none; border: 1px solid rgba(16,24,40,.10); background: rgba(255,255,255,.65);">
+              <div class="card-h" style="border-bottom: 1px solid rgba(16,24,40,.10);">
+                <h2>On-screen Reminders</h2>
+                <div class="hint" id="remCount">0 reminders</div>
+              </div>
+              <div class="card-b">
+                <ul class="list" id="reminders"></ul>
+                <div class="empty" id="remEmpty" style="display:none;">No reminders right now. Keep logging deadlines and attendance.</div>
+              </div>
+            </div>
+
+            <div class="card" style="box-shadow:none; border: 1px solid rgba(16,24,40,.10); background: rgba(255,255,255,.65);">
+              <div class="card-h" style="border-bottom: 1px solid rgba(16,24,40,.10);">
+                <h2>Action Plan</h2>
+                <div class="hint">2–3 steps</div>
+              </div>
+              <div class="card-b">
+                <ol class="list" id="actions"></ol>
+              </div>
+            </div>
+          </div>
+
+          <div style="margin-top:12px; color:#555; font-size:12px;">
+            Generated by Academic Performance Monitor • For personal study planning
+          </div>
+        </div>
+
+        <div style="display:flex; gap:10px; margin-top:14px; justify-content:flex-end; flex-wrap:wrap;">
+          <button class="btn" id="backBtn" type="button">Edit inputs</button>
+          <button class="btn primary" id="pdfBtn" type="button">
+            <span class="spinner" id="pdfSpinner" aria-hidden="true" style="display:none;"></span>
+            <span id="pdfText">Download PDF</span>
+          </button>
+        </div>
+      </div>
+    </section>
+  </div>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script>
+    // ---------- Helpers ----------
+    const $ = (id) => document.getElementById(id);
+
+    function toast(msg){
+      const t = $("toast");
+      t.textContent = msg;
+      t.classList.add("show");
+      clearTimeout(toast._timer);
+      toast._timer = setTimeout(() => t.classList.remove("show"), 2200);
+    }
+
+    function daysUntil(dateStr){
+      if(!dateStr) return null;
+      const today = new Date();
+      const due = new Date(dateStr + "T00:00:00");
+      const start = new Date(today.toDateString());
+      return Math.round((due - start) / (1000*60*60*24));
+    }
+
+    function clamp(n,min,max){ return Math.max(min, Math.min(max, n)); }
+
+    function escapeHtml(str){
+      return String(str).replace(/[&<>"']/g, s => ({
+        "&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"
+      }[s]));
+    }
+
+    function showScreen(which){
+      const input = $("screenInput");
+      const results = $("screenResults");
+      const from = which === "results" ? input : results;
+      const to   = which === "results" ? results : input;
+
+      from.classList.add("out");
+      setTimeout(() => {
+        from.classList.remove("active","out");
+        to.classList.add("active");
+        window.scrollTo({top:0, behavior:"smooth"});
+      }, 220);
+
+      $("dot1").classList.toggle("active", which !== "results");
+      $("dot2").classList.toggle("active", which === "results");
+      $("stepLabel").textContent = which === "results" ? "Results" : "Input";
+    }
+
+    // ---------- State (NO STORAGE) ----------
+    let deadlines = [];
+
+    // ---------- Engagement badge ----------
+    function updateEngBadge(){
+      const v = Number($("engagement").value);
+      $("engBadge").textContent = `${v} / 5`;
+    }
+
+    // ---------- Deadlines ----------
+    function renderDeadlines(){
+      const list = $("deadlineList");
+      list.innerHTML = "";
+
+      if(deadlines.length === 0){
+        const div = document.createElement("div");
+        div.className = "empty";
+        div.textContent = "No deadlines added yet (optional). Add at least one for deadline reminders.";
+        list.appendChild(div);
+        return;
+      }
+
+      deadlines
+        .slice()
+        .sort((a,b)=> daysUntil(a.dueDate) - daysUntil(b.dueDate))
+        .forEach((dl) => {
+          const dueIn = daysUntil(dl.dueDate);
+          const badge = (dueIn === null) ? "" : (dueIn <= 0 ? "Due now" : `Due in ${dueIn} day(s)`);
+
+          const item = document.createElement("div");
+          item.className = "dlItem";
+          item.innerHTML = `
+            <div>
+              <div style="font-weight:800">${escapeHtml(dl.title)}</div>
+              <small>${escapeHtml(dl.dueDate)} • ${escapeHtml(badge)}</small>
+            </div>
+            <div style="text-align:right; color: rgba(91,100,122,.95); font-size:12px;">
+              ${badge ? badge : ""}
+            </div>
+            <button class="iconBtn" type="button" aria-label="Remove deadline">✕</button>
+          `;
+          item.querySelector("button").addEventListener("click", ()=>{
+            deadlines = deadlines.filter(d => d.id !== dl.id);
+            renderDeadlines();
+            toast("Deadline removed");
+          });
+          list.appendChild(item);
+        });
+    }
+
+    // ---------- Validation touch state ----------
+    function markTouched(el){ el.dataset.touched = "1"; }
+
+    // ---------- Evaluate performance ----------
+    function evaluate(data){
+      const reminders = [];
+      const actions = [];
+      const reasons = [];
+
+      const sorted = [...data.deadlines].sort((a,b)=> daysUntil(a.dueDate) - daysUntil(b.dueDate));
+      const soonest = sorted[0];
+      const soonestDays = soonest ? daysUntil(soonest.dueDate) : null;
+
+      if(soonest){
+        if(soonestDays <= 0) reminders.push(`⚠️ Deadline today/overdue: ${soonest.title}. Submit as soon as possible.`);
+        else if(soonestDays <= 3) reminders.push(`🚨 Deadline in ${soonestDays} day(s): ${soonest.title}. Start today (minimum 60 mins).`);
+        else if(soonestDays <= 7) reminders.push(`⏰ Upcoming deadline in ${soonestDays} day(s): ${soonest.title}. Break into 2 tasks.`);
+        else reminders.push(`📌 Next deadline: ${soonest.title} in ${soonestDays} day(s).`);
+      }
+
+      if(data.attendancePct < 70) reminders.push(`🚨 Low attendance (${data.attendancePct}%). This can impact progression.`);
+      else if(data.attendancePct < 85) reminders.push(`📉 Attendance is moderate (${data.attendancePct}%). Aim for 85%+.`);
+
+      if(data.engagementLevel <= 2) reminders.push(`🧠 Engagement is low (${data.engagementLevel}/5). Increase participation + study time.`);
+      else if(data.engagementLevel === 3) reminders.push(`📚 Engagement is average (3/5). A small increase can improve performance.`);
+
+      if(data.missedDeadlines >= 1) reminders.push(`⚠️ Missed deadlines: ${data.missedDeadlines}. Prioritise catch-up to avoid backlog.`);
+      if(data.modulesBehind >= 1) reminders.push(`🗂️ Modules behind: ${data.modulesBehind}. Schedule catch-up sessions.`);
+
+      let status = "On Track";
+      if(data.attendancePct < 70 || data.missedDeadlines >= 2 || data.engagementLevel <= 2){
+        status = "At Risk";
+      } else {
+        const needsAttention =
+          (data.attendancePct >= 70 && data.attendancePct < 85) ||
+          (data.missedDeadlines === 1) ||
+          (data.engagementLevel === 3) ||
+          (soonestDays !== null && soonestDays <= 7) ||
+          (data.modulesBehind >= 1);
+        if(needsAttention) status = "Needs Attention";
+      }
+
+      if(data.attendancePct < 85) reasons.push(`attendance ${data.attendancePct}%`);
+      if(data.missedDeadlines > 0) reasons.push(`${data.missedDeadlines} missed deadline(s)`);
+      if(data.engagementLevel <= 3) reasons.push(`engagement ${data.engagementLevel}/5`);
+      if(soonestDays !== null && soonestDays <= 7) reasons.push(`deadline in ${soonestDays} day(s)`);
+      if(data.modulesBehind > 0) reasons.push(`${data.modulesBehind} module(s) behind`);
+
+      if(status === "On Track"){
+        actions.push("Keep logging deadlines early and do a 30–45 minute weekly review (notes → practice → plan).");
+        actions.push("Maintain attendance and engagement: prepare 1 question before each session.");
+      } else if(status === "Needs Attention"){
+        actions.push("Schedule 2 focused study blocks (45–60 mins) for the nearest deadline (start with the hardest part).");
+        actions.push("Improve attendance/engagement this week: attend the next session and contribute at least once.");
+        if(data.missedDeadlines >= 1 || data.modulesBehind >= 1){
+          actions.push("Create a 3-day catch-up plan: one topic/module per day + a short recap note.");
+        }
+      } else {
+        actions.push("Contact your tutor/module leader today and ask for the top 1–2 priorities to focus on first.");
+        actions.push("Set a recovery week: 3–5 study blocks + one catch-up submission target.");
+        if(data.attendancePct < 70){
+          actions.push("Fix attendance first: remove one barrier (alarm, travel plan, accountability partner).");
+        } else if(data.missedDeadlines >= 2){
+          actions.push("Do a backlog reset: list missed items, choose the easiest first, and submit one within 48 hours.");
+        }
+      }
+
+      return {
+        status,
+        reminders: reminders.length ? reminders : ["✅ No reminders right now. Keep your routine and log deadlines early."],
+        actions: actions.slice(0,3),
+        reasonText: reasons.length ? `Key factors: ${reasons.slice(0,3).join(", ")}.` : ""
+      };
+    }
+
+    function renderResults(result){
+      $("statusText").textContent = result.status;
+      $("statusReason").textContent = result.reasonText;
+
+      const pill = $("statusPill");
+      pill.className = "pill bump";
+      if(result.status === "On Track"){
+        pill.textContent = "ON TRACK";
+        pill.classList.add("track");
+      } else if(result.status === "Needs Attention"){
+        pill.textContent = "NEEDS ATTENTION";
+        pill.classList.add("attn");
+      } else {
+        pill.textContent = "AT RISK";
+        pill.classList.add("risk");
+      }
+
+      const rem = $("reminders");
+      rem.innerHTML = "";
+      result.reminders.forEach(r => {
+        const li = document.createElement("li");
+        li.textContent = r;
+        rem.appendChild(li);
+      });
+      $("remCount").textContent = `${result.reminders.length} reminder(s)`;
+      $("remEmpty").style.display = result.reminders.length ? "none" : "block";
+
+      const act = $("actions");
+      act.innerHTML = "";
+      result.actions.forEach(a => {
+        const li = document.createElement("li");
+        li.textContent = a;
+        act.appendChild(li);
+      });
+    }
+
+    async function downloadPDF(){
+      if(!window.html2canvas || !window.jspdf){
+        toast("PDF tools not loaded (check internet).");
+        return;
+      }
+
+      const btn = $("pdfBtn");
+      const spinner = $("pdfSpinner");
+      const text = $("pdfText");
+
+      btn.disabled = true;
+      spinner.style.display = "inline-block";
+      text.textContent = "Creating PDF...";
+
+      try{
+        const area = $("pdfArea");
+        const canvas = await html2canvas(area, { scale: 2, useCORS: true, backgroundColor: "#ffffff" });
+        const imgData = canvas.toDataURL("image/png");
+        const { jsPDF } = window.jspdf;
+
+        const pdf = new jsPDF("p","mm","a4");
+        const pageW = pdf.internal.pageSize.getWidth();
+        const pageH = pdf.internal.pageSize.getHeight();
+        const imgW = pageW;
+        const imgH = (canvas.height * imgW) / canvas.width;
+
+        let y = 0;
+        let remaining = imgH;
+        pdf.addImage(imgData, "PNG", 0, y, imgW, imgH, undefined, "FAST");
+
+        while(remaining > pageH){
+          remaining -= pageH;
+          y -= pageH;
+          pdf.addPage();
+          pdf.addImage(imgData, "PNG", 0, y, imgW, imgH, undefined, "FAST");
+        }
+
+        pdf.save("academic-performance-results.pdf");
+        toast("PDF downloaded");
+      } catch (e){
+        console.error(e);
+        toast("Could not generate PDF.");
+      } finally{
+        btn.disabled = false;
+        spinner.style.display = "none";
+        text.textContent = "Download PDF";
+      }
+    }
+
+    function clearAll(){
+      $("checkinForm").reset();
+      deadlines = [];
+      $("notes").value = "";
+      $("engagement").value = 3;
+      updateEngBadge();
+
+      const d = new Date(); d.setDate(d.getDate() + 7);
+      $("dlDate").value = d.toISOString().slice(0,10);
+
+      ["attendance","missedDeadlines","modulesBehind"].forEach(id => $(id).dataset.touched = "0");
+
+      renderDeadlines();
+      showScreen("input");
+      toast("Reset complete");
+    }
+
+    (() => {
+      const d = new Date(); d.setDate(d.getDate() + 7);
+      $("dlDate").value = d.toISOString().slice(0,10);
+      updateEngBadge();
+      renderDeadlines();
+    })();
+
+    $("engagement").addEventListener("input", updateEngBadge);
+
+    ["attendance","missedDeadlines","modulesBehind"].forEach(id => {
+      const el = $(id);
+      el.addEventListener("blur", ()=> markTouched(el));
+      el.addEventListener("input", ()=> { if(el.dataset.touched === "1") el.reportValidity(); });
+    });
+
+    $("addDeadlineBtn").addEventListener("click", () => {
+      const title = $("dlTitle").value.trim();
+      const dueDate = $("dlDate").value;
+
+      if(!title){ toast("Add a deadline title"); $("dlTitle").focus(); return; }
+      if(!dueDate){ toast("Choose a due date"); $("dlDate").focus(); return; }
+
+      const id = crypto?.randomUUID ? crypto.randomUUID() : String(Date.now() + Math.random());
+      deadlines.push({ id, title, dueDate });
+      $("dlTitle").value = "";
+      renderDeadlines();
+      toast("Deadline added");
+    });
+
+    $("checkinForm").addEventListener("submit", (e) => {
+      e.preventDefault();
+
+      const btn = $("generateBtn");
+      btn.classList.add("loading");
+      btn.disabled = true;
+
+      const required = [$("attendance"), $("missedDeadlines"), $("modulesBehind")];
+      required.forEach(el => markTouched(el));
+      const ok = required.every(el => el.checkValidity());
+
+      if(!ok){
+        btn.classList.remove("loading");
+        btn.disabled = false;
+        toast("Please fix highlighted fields");
+        required.find(el => !el.checkValidity())?.focus();
+        return;
+      }
+
+      setTimeout(() => {
+        const data = {
+          attendancePct: clamp(Number($("attendance").value), 0, 100),
+          engagementLevel: clamp(Number($("engagement").value), 1, 5),
+          missedDeadlines: clamp(Number($("missedDeadlines").value), 0, 99),
+          modulesBehind: clamp(Number($("modulesBehind").value), 0, 99),
+          deadlines: deadlines.slice(),
+          notes: $("notes").value.trim()
+        };
+
+        const result = evaluate(data);
+        renderResults(result);
+
+        showScreen("results");
+        toast("Results generated");
+
+        btn.classList.remove("loading");
+        btn.disabled = false;
+      }, 350);
+    });
+
+    $("backBtn").addEventListener("click", () => showScreen("input"));
+    $("resetBtn").addEventListener("click", clearAll);
+    $("pdfBtn").addEventListener("click", downloadPDF);
+  </script>
+</body>
+</html>

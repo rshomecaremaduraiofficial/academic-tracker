@@ -1,0 +1,531 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Login</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <style>
+    :root{
+      --bg0:#0b1220;
+      --bg1:#0e1630;
+      --border: rgba(255,255,255,.12);
+      --text: rgba(255,255,255,.92);
+      --muted: rgba(255,255,255,.66);
+
+      --ring: rgba(6,182,212,.28);
+      --shadow: 0 28px 80px rgba(0,0,0,.55);
+      --shadowSoft: 0 18px 50px rgba(0,0,0,.45);
+
+      --radius: 22px;
+      --radiusSm: 14px;
+
+      /* layout */
+      --max: 1120px;
+      --pad: 18px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+    body{
+      margin:0;
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      color: var(--text);
+      background: linear-gradient(180deg, var(--bg0) 0%, var(--bg1) 100%);
+      overflow-x:hidden;
+      position:relative;
+    }
+
+    /* bg image */
+    body::before{
+      content:"";
+      position:fixed;
+      inset:0;
+      background: url("background.avif") center/cover no-repeat;
+      opacity:.06;
+      z-index:-4;
+      filter: saturate(1.05) contrast(1.05);
+      transform: scale(1.02);
+    }
+
+    /* aurora */
+    .aurora{
+      position:fixed;
+      inset: -20%;
+      z-index:-3;
+      pointer-events:none;
+      filter: blur(60px);
+      opacity: .75;
+      background:
+        radial-gradient(40% 35% at 20% 25%, rgba(6,182,212,.55), transparent 60%),
+        radial-gradient(35% 40% at 78% 20%, rgba(167,139,250,.55), transparent 62%),
+        radial-gradient(38% 45% at 45% 80%, rgba(34,197,94,.40), transparent 62%),
+        radial-gradient(35% 40% at 85% 75%, rgba(251,113,133,.28), transparent 68%);
+      animation: auroraMove 14s ease-in-out infinite;
+      transform: translate3d(0,0,0);
+    }
+    @keyframes auroraMove{
+      0%,100%{ transform: translate(-1%, -1%) scale(1); }
+      50%{ transform: translate(1.5%, 1%) scale(1.03); }
+    }
+
+    /* stars */
+    .stars{
+      position:fixed;
+      inset:0;
+      z-index:-2;
+      pointer-events:none;
+      opacity:.22;
+      background-image:
+        radial-gradient(2px 2px at 10% 20%, rgba(255,255,255,.35), transparent 60%),
+        radial-gradient(1px 1px at 35% 65%, rgba(255,255,255,.25), transparent 60%),
+        radial-gradient(1.5px 1.5px at 70% 30%, rgba(255,255,255,.28), transparent 60%),
+        radial-gradient(1px 1px at 82% 70%, rgba(255,255,255,.22), transparent 60%),
+        radial-gradient(1.5px 1.5px at 55% 15%, rgba(255,255,255,.22), transparent 60%);
+      animation: starsDrift 18s linear infinite;
+    }
+    @keyframes starsDrift{
+      from{ transform: translateY(0); }
+      to{ transform: translateY(18px); }
+    }
+
+    /* =========================
+       LAYOUT: proper alignment
+    ========================= */
+    .container{
+      width: min(var(--max), 92vw);
+      margin: 0 auto;
+      padding: 34px 0 64px;
+      min-height: 100vh;
+      display: grid;
+      place-items: center;
+      animation: pageIn .75s cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes pageIn{
+      from{ opacity:0; transform: translateY(18px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    .layout{
+      width: 100%;
+      display:grid;
+      grid-template-columns: 1.1fr 0.9fr;
+      gap: 22px;
+      align-items: center;
+      padding: 0 6px;
+    }
+
+    @media (max-width: 980px){
+      .layout{ grid-template-columns: 1fr; }
+    }
+
+    /* HERO */
+    .hero{
+      padding: 8px 6px 0;
+      display:flex;
+      flex-direction:column;
+      gap: 12px;
+      max-width: 64ch;
+    }
+
+    .hero-title{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      animation: floatUp .8s cubic-bezier(.2,.9,.2,1) both;
+    }
+
+    .logo{
+      height: 56px;
+      width:auto;
+      object-fit:contain;
+      filter: drop-shadow(0 10px 20px rgba(0,0,0,.35));
+      animation: logoPop .85s cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes logoPop{
+      from{ opacity:0; transform: translateY(8px) scale(.92); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .hero h1{
+      margin:0;
+      font-size: clamp(30px, 3.6vw, 48px);
+      letter-spacing: -0.03em;
+      line-height:1.05;
+    }
+
+    .hero p{
+      margin:0;
+      color: var(--muted);
+      line-height: 1.65;
+      animation: floatUp .9s cubic-bezier(.2,.9,.2,1) both;
+      animation-delay: .06s;
+    }
+
+    @keyframes floatUp{
+      from{ opacity:0; transform: translateY(14px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    /* LINKS */
+    .links{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      margin-top: 2px;
+      animation: floatUp .95s cubic-bezier(.2,.9,.2,1) both;
+      animation-delay: .12s;
+    }
+    .links a{
+      text-decoration:none;
+      color: var(--text);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.12);
+      padding: 10px 14px;
+      border-radius: 999px;
+      box-shadow: 0 12px 28px rgba(0,0,0,.22);
+      backdrop-filter: blur(10px);
+      transition: transform .18s ease, border-color .18s ease, background .18s ease;
+      position:relative;
+      overflow:hidden;
+      will-change: transform;
+    }
+    .links a:hover{
+      transform: translateY(-1px);
+      border-color: rgba(6,182,212,.35);
+      background: rgba(255,255,255,.08);
+    }
+    .links a::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.16), transparent);
+      transform: translateX(-80%);
+      opacity:0;
+    }
+    .links a:hover::after{
+      opacity:1;
+      animation: sheen 1.3s ease-in-out infinite;
+    }
+    @keyframes sheen{
+      0%{ transform: translateX(-80%); }
+      100%{ transform: translateX(80%); }
+    }
+
+    /* CARD */
+    .card{
+      position:relative;
+      border-radius: var(--radius);
+      border: 1px solid rgba(255,255,255,.14);
+      background: linear-gradient(180deg, rgba(255,255,255,.09), rgba(255,255,255,.05));
+      box-shadow: var(--shadow);
+      backdrop-filter: blur(14px);
+      padding: 20px;
+      overflow:hidden;
+      animation: cardIn .85s cubic-bezier(.2,.9,.2,1) both;
+      animation-delay: .06s;
+    }
+    @keyframes cardIn{
+      from{ opacity:0; transform: translateY(18px) scale(.985); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+    .card::before{
+      content:"";
+      position:absolute;
+      inset:-2px;
+      background: conic-gradient(from 180deg,
+        rgba(6,182,212,.0),
+        rgba(6,182,212,.35),
+        rgba(167,139,250,.32),
+        rgba(34,197,94,.22),
+        rgba(6,182,212,.0)
+      );
+      filter: blur(18px);
+      opacity:.40;
+      z-index:0;
+      animation: spinGlow 12s linear infinite;
+    }
+    @keyframes spinGlow{ to{ transform: rotate(360deg);} }
+    .card::after{
+      content:"";
+      position:absolute;
+      inset:1px;
+      background: rgba(0,0,0,.10);
+      border-radius: calc(var(--radius) - 2px);
+      z-index:0;
+    }
+    .card > *{ position:relative; z-index:1; }
+
+    .card h2{
+      margin: 0 0 14px;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    .row{ display:flex; flex-direction:column; gap: 12px; }
+
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 520px){
+      .grid2{ grid-template-columns: 1fr; }
+    }
+
+    label{
+      font-size: 12px;
+      color: rgba(255,255,255,.70);
+      display:block;
+      margin: 0 0 6px;
+    }
+    .field{ position:relative; }
+
+    input{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: var(--radiusSm);
+      border: 1px solid rgba(255,255,255,.14);
+      background: rgba(0,0,0,.22);
+      color: rgba(255,255,255,.92);
+      outline:none;
+      transition: box-shadow .2s ease, border-color .2s ease, transform .12s ease, background .2s ease;
+    }
+    input::placeholder{ color: rgba(255,255,255,.45); }
+    input:hover{ border-color: rgba(255,255,255,.20); }
+    input:focus{
+      border-color: rgba(6,182,212,.55);
+      box-shadow: 0 0 0 6px var(--ring);
+      transform: translateY(-1px);
+      background: rgba(0,0,0,.28);
+    }
+
+    /* ✅ Show/Hide password */
+    .password-wrapper{
+      position: relative;
+    }
+    .password-wrapper input{
+      padding-right: 46px; /* space for the eye icon */
+    }
+    .toggle-password{
+      position:absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      color: rgba(255,255,255,.68);
+      transition: color .2s ease, transform .15s ease;
+      user-select: none;
+    }
+    .toggle-password:hover{
+      color: rgba(6,182,212,.95);
+      transform: translateY(-50%) scale(1.08);
+    }
+
+    .actions{
+      display:flex;
+      gap: 10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top: 6px;
+    }
+
+    button{
+      border:0;
+      cursor:pointer;
+      padding: 11px 16px;
+      border-radius: 999px;
+      font-weight: 900;
+      color: rgba(12,18,32,.96);
+      background: linear-gradient(135deg, rgba(6,182,212,.95), rgba(167,139,250,.92));
+      box-shadow: 0 14px 32px rgba(0,0,0,.35);
+      transition: transform .14s ease, box-shadow .2s ease, filter .2s ease;
+      display:inline-flex;
+      align-items:center;
+      justify-content:center;
+      gap: 8px;
+      position:relative;
+      overflow:hidden;
+      will-change: transform;
+    }
+    button::after{
+      content:"";
+      position:absolute;
+      inset:0;
+      background: linear-gradient(90deg, transparent, rgba(255,255,255,.28), transparent);
+      transform: translateX(-80%);
+      opacity:0;
+    }
+    button:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.03);
+      box-shadow: 0 16px 38px rgba(0,0,0,.42);
+    }
+    button:hover::after{
+      opacity:1;
+      animation: sheen 1.2s ease-in-out infinite;
+    }
+    button:active{ transform: translateY(0) scale(.99); }
+
+    button.secondary{
+      color: rgba(255,255,255,.90);
+      background: rgba(255,255,255,.06);
+      border: 1px solid rgba(255,255,255,.14);
+      box-shadow: 0 12px 28px rgba(0,0,0,.28);
+    }
+    button.secondary:hover{
+      border-color: rgba(6,182,212,.35);
+      background: rgba(255,255,255,.08);
+    }
+
+    /* Mobile polish */
+    @media (max-width: 980px){
+      .hero{ max-width: 100%; }
+      .layout{ padding: 0 10px; }
+      .card{ padding: 18px; }
+    }
+    @media (max-width: 520px){
+      .container{ padding: 28px 0 56px; }
+      .hero-title{ gap: 12px; }
+      .logo{ height: 52px; }
+      .links a{ padding: 10px 12px; }
+      button{ width: 100%; }
+      button.secondary{ width: 100%; }
+      .actions{ width: 100%; }
+    }
+
+    /* shake animation */
+    .shake{ animation: shake .35s ease; }
+    @keyframes shake{
+      0%,100%{ transform: translateX(0); }
+      25%{ transform: translateX(-6px); }
+      50%{ transform: translateX(6px); }
+      75%{ transform: translateX(-4px); }
+    }
+
+    a:focus, button:focus{ outline:none; }
+    a:focus-visible, button:focus-visible{
+      box-shadow: 0 0 0 6px var(--ring);
+      border-radius: 999px;
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{ animation:none !important; transition:none !important; }
+    }
+  </style>
+</head>
+
+<body data-page="login">
+  <div class="aurora"></div>
+  <div class="stars"></div>
+
+  <div class="container">
+    <div class="layout">
+
+      <!-- LEFT: HERO -->
+      <div class="hero">
+        <div class="hero-title">
+          <img src="logo.png" alt="Logo" class="logo">
+          <h1>Student Portal Login</h1>
+        </div>
+
+        <p>
+          Access your personalized student dashboard securely using your Student ID, username, password,
+          and 4-digit verification code to track academic progress, monitor performance, and stay updated
+          with important announcements.
+        </p>
+
+        <div class="links">
+          <a href="signup.html">Sign Up</a>
+          <a href="forget.html">Forgot Password</a>
+          <a href="admin.html">Admin</a>
+        </div>
+      </div>
+
+      <!-- RIGHT: CARD -->
+      <div class="card" id="loginCard">
+        <h2>Login</h2>
+
+        <div class="row">
+          <div class="field">
+            <label>Student ID</label>
+            <input id="studentId" placeholder="e.g. 2026001" inputmode="numeric" />
+          </div>
+
+          <div class="field">
+            <label>Username</label>
+            <input id="username" placeholder="Your username" autocomplete="username" />
+          </div>
+
+          <div class="grid2">
+            <div class="field">
+              <label>Password</label>
+
+              <!-- ✅ password wrapper + eye -->
+              <div class="password-wrapper">
+                <input id="password" type="password" placeholder="Password" autocomplete="current-password" />
+                <svg class="toggle-password" onclick="togglePassword('password', this)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label="Toggle password visibility" role="button">
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+                </svg>
+              </div>
+            </div>
+
+            <div class="field">
+              <label>4-Digit Code</label>
+              <input id="code4" maxlength="4" placeholder="e.g. 1234" inputmode="numeric" />
+            </div>
+          </div>
+
+          <div class="actions">
+            <button type="button" onclick="handleLogin()">Login</button>
+            <button type="button" class="secondary" onclick="location.href='forget.html'">Forgot Password</button>
+          </div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <script>
+    function togglePassword(id, icon){
+      const input = document.getElementById(id);
+      if(!input) return;
+
+      const isHidden = input.type === "password";
+      input.type = isHidden ? "text" : "password";
+
+      // optional small visual feedback
+      icon.style.color = isHidden ? "rgba(6,182,212,.95)" : "rgba(255,255,255,.68)";
+      icon.setAttribute("aria-pressed", String(isHidden));
+    }
+
+    function shakeCard(){
+      const card = document.getElementById("loginCard");
+      if(!card) return;
+      card.classList.remove("shake");
+      void card.offsetWidth;
+      card.classList.add("shake");
+      setTimeout(()=>card.classList.remove("shake"), 420);
+    }
+
+    window.addEventListener("click", (e) => {
+      const btn = e.target.closest("button");
+      if(!btn || btn.textContent.trim().toLowerCase() !== "login") return;
+
+      const studentId = (document.getElementById("studentId")?.value || "").trim();
+      const username  = (document.getElementById("username")?.value || "").trim();
+      const password  = (document.getElementById("password")?.value || "");
+      const code4     = (document.getElementById("code4")?.value || "").trim();
+
+      if(!studentId || !username || !password || !code4) shakeCard();
+    }, true);
+  </script>
+
+  <script src="app.js"></script>
+</body>
+</html>

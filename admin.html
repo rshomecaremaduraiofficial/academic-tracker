@@ -1,0 +1,505 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Admin</title>
+  <link rel="icon" type="image/png" href="logo.png">
+  <link rel="apple-touch-icon" href="logo.png">
+
+  <style>
+    :root{
+      --bg: #f6f8fc;
+      --card: rgba(255,255,255,.92);
+      --card-border: rgba(15, 23, 42, .08);
+      --text: #0f172a;
+      --muted: rgba(15,23,42,.65);
+      --primary: #2563eb;
+      --primary-2: #4f46e5;
+      --ring: rgba(37,99,235,.25);
+      --shadow: 0 14px 40px rgba(15, 23, 42, .12);
+      --shadow-soft: 0 10px 22px rgba(15, 23, 42, .08);
+      --radius: 18px;
+      --radius-sm: 14px;
+      --max: 1120px;
+    }
+
+    *{ box-sizing:border-box; }
+    html,body{ height:100%; }
+
+    body{
+      margin:0;
+      color: var(--text);
+      font-family: ui-sans-serif, system-ui, -apple-system, Segoe UI, Roboto, Arial;
+      background: linear-gradient(180deg, #ffffff 0%, var(--bg) 100%);
+      overflow-x:hidden;
+      position:relative;
+    }
+
+    body::before{
+      content:"";
+      position: fixed;
+      inset: 0;
+      background: url("background.avif") center/cover no-repeat;
+      opacity: 0.14;
+      z-index: -2;
+    }
+
+    /* Page container */
+    .container{
+      width: min(var(--max), 92vw);
+      margin: 0 auto;
+      min-height: 100vh;
+      padding: 26px 0 56px;
+      display:grid;
+      gap: 14px;
+      align-content: start;
+      animation: pageIn .7s cubic-bezier(.2,.9,.2,1) both;
+    }
+
+    /* Center vertically on large screens */
+    @media (min-width: 980px){
+      .container{
+        align-content: center;
+        padding: 36px 0;
+      }
+    }
+
+    @keyframes pageIn{
+      from{ opacity:0; transform: translateY(18px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    /* Header: ONLY logo + title */
+    .header{
+      display:flex;
+      justify-content:center;
+      align-items:center;
+      text-align:center;
+      padding: 6px 6px 2px;
+    }
+    .header-inner{
+      display:flex;
+      align-items:center;
+      gap: 14px;
+      animation: floatUp .85s cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes floatUp{
+      from{ opacity:0; transform: translateY(14px); }
+      to{ opacity:1; transform: translateY(0); }
+    }
+
+    .logo{
+      height: 58px;
+      width:auto;
+      object-fit:contain;
+      filter: drop-shadow(0 10px 22px rgba(15,23,42,.16));
+      animation: logoPop .9s cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes logoPop{
+      from{ opacity:0; transform: translateY(10px) scale(.92); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    h1{
+      margin:0;
+      font-size: clamp(26px, 3vw, 40px);
+      letter-spacing: -0.02em;
+      line-height: 1.05;
+    }
+
+    /* Card */
+    .card{
+      background: var(--card);
+      border: 1px solid var(--card-border);
+      border-radius: var(--radius);
+      box-shadow: var(--shadow);
+      padding: 18px;
+      backdrop-filter: blur(10px);
+      animation: cardIn .85s cubic-bezier(.2,.9,.2,1) both;
+    }
+    @keyframes cardIn{
+      from{ opacity:0; transform: translateY(18px) scale(.985); }
+      to{ opacity:1; transform: translateY(0) scale(1); }
+    }
+
+    .card h2{
+      margin: 0 0 12px;
+      font-size: 18px;
+      letter-spacing: -0.01em;
+    }
+
+    /* Before login: make login box narrow and centered */
+    .loginWrap{
+      width: min(520px, 100%);
+      margin: 0 auto;
+    }
+
+    /* After login: panel becomes full width automatically */
+    #adminPanel{
+      width: 100%;
+    }
+
+    .row{ display:flex; flex-direction:column; gap:12px; }
+    .grid2{
+      display:grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 12px;
+    }
+    @media (max-width: 720px){
+      .grid2{ grid-template-columns: 1fr; }
+      .header-inner{ flex-direction: column; gap: 10px; }
+      .header{ justify-content:flex-start; }
+    }
+
+    label{
+      font-size: 12px;
+      color: var(--muted);
+      display:block;
+      margin: 0 0 6px;
+    }
+
+    input, select{
+      width:100%;
+      padding: 12px 12px;
+      border-radius: var(--radius-sm);
+      border: 1px solid rgba(15,23,42,.12);
+      background: rgba(255,255,255,.95);
+      outline:none;
+      transition: box-shadow .2s ease, border-color .2s ease, transform .12s ease;
+    }
+    input:focus, select:focus{
+      border-color: rgba(37,99,235,.55);
+      box-shadow: 0 0 0 6px var(--ring);
+      transform: translateY(-1px);
+    }
+
+    /* ✅ Show/Hide password */
+    .password-wrapper{
+      position: relative;
+    }
+    .password-wrapper input{
+      padding-right: 46px; /* space for the eye icon */
+    }
+    .toggle-password{
+      position:absolute;
+      right: 12px;
+      top: 50%;
+      transform: translateY(-50%);
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+      color: rgba(15,23,42,.55);
+      transition: color .2s ease, transform .15s ease;
+      user-select: none;
+    }
+    .toggle-password:hover{
+      color: rgba(37,99,235,.95);
+      transform: translateY(-50%) scale(1.08);
+    }
+
+    .actions{
+      display:flex;
+      gap:10px;
+      flex-wrap:wrap;
+      align-items:center;
+      margin-top: 4px;
+    }
+
+    button{
+      border:0;
+      cursor:pointer;
+      padding: 11px 14px;
+      border-radius: 999px;
+      font-weight: 700;
+      color: white;
+      background: linear-gradient(135deg, var(--primary), var(--primary-2));
+      box-shadow: 0 10px 22px rgba(37,99,235,.22);
+      transition: transform .14s ease, box-shadow .2s ease, filter .2s ease;
+    }
+    button:hover{
+      transform: translateY(-1px);
+      filter: brightness(1.02);
+      box-shadow: 0 12px 26px rgba(37,99,235,.24);
+    }
+    button:active{ transform: translateY(0) scale(.99); }
+
+    button.secondary{
+      color: var(--text);
+      background: rgba(255,255,255,.92);
+      border: 1px solid rgba(15,23,42,.12);
+      box-shadow: 0 10px 20px rgba(15,23,42,.08);
+    }
+
+    @media (max-width: 520px){
+      button{ width:100%; }
+      .actions{ width:100%; }
+    }
+
+    /* Table */
+    .tableWrap{
+      overflow:auto;
+      border-radius: var(--radius);
+      border: 1px solid rgba(15,23,42,.08);
+      background: rgba(255,255,255,.8);
+    }
+    table{
+      width:100%;
+      border-collapse: collapse;
+      min-width: 820px;
+    }
+    thead th{
+      text-align:left;
+      font-size: 12px;
+      color: var(--muted);
+      padding: 12px;
+      background: rgba(248,250,252,.9);
+      position: sticky;
+      top: 0;
+      backdrop-filter: blur(10px);
+    }
+    tbody td{
+      padding: 12px;
+      border-top: 1px solid rgba(15,23,42,.06);
+      font-size: 13px;
+    }
+    tbody tr:hover{
+      background: rgba(37,99,235,.05);
+    }
+
+    /* ===== Loading Overlay ===== */
+    .loaderOverlay{
+      position: fixed;
+      inset: 0;
+      display: grid;
+      place-items: center;
+      background: rgba(255,255,255,.65);
+      backdrop-filter: blur(8px);
+      z-index: 9999;
+      opacity: 0;
+      pointer-events: none;
+      transition: opacity .25s ease;
+    }
+    .loaderOverlay.show{
+      opacity: 1;
+      pointer-events: auto;
+    }
+    .loaderCard{
+      width: min(420px, 90vw);
+      padding: 18px;
+      border-radius: 20px;
+      background: rgba(255,255,255,.9);
+      border: 1px solid rgba(15,23,42,.10);
+      box-shadow: 0 18px 45px rgba(15,23,42,.18);
+      transform: translateY(10px) scale(.98);
+      transition: transform .25s cubic-bezier(.2,.9,.2,1);
+    }
+    .loaderOverlay.show .loaderCard{ transform: translateY(0) scale(1); }
+    .loaderTop{ display:flex; align-items:center; gap:12px; }
+    .spinner{
+      width: 38px; height: 38px;
+      border-radius: 50%;
+      border: 4px solid rgba(37,99,235,.18);
+      border-top-color: rgba(37,99,235,.95);
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin{ to{ transform: rotate(360deg);} }
+    .shimmer{
+      margin-top: 14px;
+      height: 10px;
+      border-radius: 999px;
+      background: rgba(15,23,42,.06);
+      overflow:hidden;
+      position: relative;
+    }
+    .shimmer::before{
+      content:"";
+      position:absolute;
+      inset: 0;
+      background: linear-gradient(90deg,
+        transparent,
+        rgba(37,99,235,.20),
+        rgba(79,70,229,.20),
+        transparent
+      );
+      transform: translateX(-60%);
+      animation: shimmer 1.2s ease-in-out infinite;
+    }
+    @keyframes shimmer{
+      0%{ transform: translateX(-60%); }
+      100%{ transform: translateX(60%); }
+    }
+
+    @media (prefers-reduced-motion: reduce){
+      *{ animation:none !important; transition:none !important; }
+    }
+  </style>
+</head>
+
+<body data-page="admin">
+
+  <div class="container">
+
+    <!-- ✅ ONLY HEADING (always visible) -->
+    <div class="header">
+      <div class="header-inner">
+        <img src="logo.png" alt="Logo" class="logo">
+        <h1>Admin Console</h1>
+      </div>
+    </div>
+
+    <!-- ✅ BEFORE LOGIN: only this centered login card -->
+    <div class="loginWrap">
+      <div class="card" id="adminLoginBox">
+        <h2>Admin Login</h2>
+        <div class="row">
+          <div>
+            <label>Username</label>
+            <input id="adminUser" placeholder="admin" />
+          </div>
+
+          <div>
+            <label>Password</label>
+            <div class="password-wrapper">
+              <input id="adminPass" type="password" placeholder="Admin password" />
+              <svg class="toggle-password" onclick="togglePassword('adminPass', this)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label="Toggle password visibility" role="button">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+              </svg>
+            </div>
+          </div>
+
+          <div>
+            <label>4-Digit Code</label>
+            <input id="adminCode" maxlength="4" placeholder="e.g. 1234" />
+          </div>
+
+          <div class="actions">
+            <button type="button" onclick="adminLogin()">Login</button>
+            <button type="button" class="secondary" onclick="location.href='index.html'">Back</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ✅ AFTER LOGIN: show this full panel (your app.js already toggles display) -->
+    <div class="card" id="adminPanel" style="display:none">
+      <h2>Users</h2>
+
+      <div class="actions">
+        <button type="button" onclick="loadUsers()">Refresh</button>
+        <button type="button" class="secondary" onclick="adminLogout()">Logout</button>
+      </div>
+
+      <div class="tableWrap" style="margin-top:12px">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Student ID</th>
+              <th>Email</th>
+              <th>Username</th>
+              <th>Code</th>
+              <th>Status</th>
+              <th>Created</th>
+              <th>Updated</th>
+              <th>Action</th>
+            </tr>
+          </thead>
+          <tbody id="usersBody"></tbody>
+        </table>
+      </div>
+
+      <hr style="border-color: rgba(15,23,42,.10); margin:16px 0">
+
+      <h2>Add / Edit User</h2>
+      <div class="row">
+        <div class="grid2">
+          <div>
+            <label>Name</label>
+            <input id="e_name" />
+          </div>
+          <div>
+            <label>Student ID</label>
+            <input id="e_studentId" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label>Email</label>
+            <input id="e_email" />
+          </div>
+          <div>
+            <label>Username</label>
+            <input id="e_username" />
+          </div>
+        </div>
+
+        <div class="grid2">
+          <div>
+            <label>4-Digit Code</label>
+            <input id="e_code4" maxlength="4" />
+          </div>
+          <div>
+            <label>Status</label>
+            <select id="e_status">
+              <option value="active">active</option>
+              <option value="disabled">disabled</option>
+            </select>
+          </div>
+        </div>
+
+        <div>
+          <label>New Password (optional)</label>
+          <div class="password-wrapper">
+            <input id="e_newPassword" type="password" placeholder="Leave empty to keep unchanged" />
+            <svg class="toggle-password" onclick="togglePassword('e_newPassword', this)" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" aria-label="Toggle password visibility" role="button">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/>
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z"/>
+            </svg>
+          </div>
+        </div>
+
+        <div class="actions">
+          <button type="button" onclick="saveUser()">Save User</button>
+          <button type="button" class="secondary" onclick="
+            ['e_name','e_studentId','e_email','e_username','e_code4','e_newPassword'].forEach(id=>document.getElementById(id).value='');
+            document.getElementById('e_status').value='active';
+          ">Clear</button>
+        </div>
+      </div>
+    </div>
+
+  </div>
+
+  <!-- Loading Overlay -->
+  <div class="loaderOverlay" id="loaderOverlay" aria-hidden="true">
+    <div class="loaderCard" role="status" aria-live="polite">
+      <div class="loaderTop">
+        <div class="spinner"></div>
+        <div class="loaderText">
+          <h3 id="loaderTitle">Loading…</h3>
+          <p id="loaderSub">Please wait a moment</p>
+        </div>
+      </div>
+      <div class="shimmer"></div>
+    </div>
+  </div>
+
+  <script>
+    function togglePassword(id, icon){
+      const input = document.getElementById(id);
+      if(!input) return;
+
+      const isHidden = input.type === "password";
+      input.type = isHidden ? "text" : "password";
+
+      icon.style.color = isHidden ? "rgba(37,99,235,.95)" : "rgba(15,23,42,.55)";
+      icon.setAttribute("aria-pressed", String(isHidden));
+    }
+  </script>
+
+  <script src="app.js"></script>
+</body>
+</html>
